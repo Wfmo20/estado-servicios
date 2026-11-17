@@ -1,0 +1,66 @@
+{
+  "checked": "2026-11-17T16:00:00+00:00",
+  "consumer": [
+    {
+      "name": "Microsoft 365 (Consumer)",
+      "status": "Operational",
+      "title": "",
+      "message": ""
+    },
+    {
+      "name": "Microsoft Copilot",
+      "status": "Operational",
+      "title": "",
+      "message": ""
+    },
+    {
+      "name": "Microsoft Lists",
+      "status": "Operational",
+      "title": "",
+      "message": ""
+    },
+    {
+      "name": "Microsoft Teams Free",
+      "status": "Operational",
+      "title": "",
+      "message": ""
+    },
+    {
+      "name": "Microsoft To-Do",
+      "status": "Operational",
+      "title": "",
+      "message": ""
+    },
+    {
+      "name": "Microsoft Whiteboard",
+      "status": "Operational",
+      "title": "",
+      "message": ""
+    },
+    {
+      "name": "Office for the web (Consumer)",
+      "status": "Operational",
+      "title": "",
+      "message": ""
+    },
+    {
+      "name": "OneDrive",
+      "status": "Operational",
+      "title": "",
+      "message": ""
+    },
+    {
+      "name": "Outlook.com",
+      "status": "Operational",
+      "title": "",
+      "message": ""
+    },
+    {
+      "name": "Phone Link",
+      "status": "Operational",
+      "title": "",
+      "message": ""
+    }
+  ],
+  "admin_incident": null
+}

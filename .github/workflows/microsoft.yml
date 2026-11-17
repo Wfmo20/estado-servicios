@@ -1,0 +1,32 @@
+name: Actualizar estado Microsoft 365
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: microsoft-status
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Descargar estado
+        run: python3 scripts/microsoft.py
+      - name: Guardar si hay cambios
+        run: |
+          if git diff --quiet data/microsoft.json; then
+            echo "Sin cambios"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add data/microsoft.json
+          git commit -m "Actualizar estado Microsoft 365"
+          git push

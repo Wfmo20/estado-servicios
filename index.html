@@ -1,0 +1,510 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Estado de servicios</title>
+<meta name="description" content="Estado en tiempo real de Zoom, Microsoft Teams, Outlook / Microsoft 365 y Gmail.">
+<style>
+  :root {
+    --bg: #f6f7f9;
+    --surface: #ffffff;
+    --border: #e3e6eb;
+    --text: #1b1f24;
+    --muted: #5f6873;
+    --ok: #1f8a4c;
+    --ok-bg: #e6f4ec;
+    --maint: #2f6fd1;
+    --maint-bg: #e7effb;
+    --warn: #b7791f;
+    --warn-bg: #fbf2e1;
+    --partial: #d0611b;
+    --partial-bg: #fcebdf;
+    --bad: #c62f2f;
+    --bad-bg: #fbe6e6;
+    --unknown: #7a828c;
+    --unknown-bg: #eef0f2;
+    --accent: #2f6fd1;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #111418;
+      --surface: #1a1e24;
+      --border: #2b313a;
+      --text: #e8ebef;
+      --muted: #9aa3ae;
+      --ok: #4cc27f;
+      --ok-bg: #173324;
+      --maint: #6b9ef0;
+      --maint-bg: #1a2a45;
+      --warn: #e2ad4f;
+      --warn-bg: #3a2e16;
+      --partial: #f08a4b;
+      --partial-bg: #3d2416;
+      --bad: #f06b6b;
+      --bad-bg: #3f1d1d;
+      --unknown: #8b939d;
+      --unknown-bg: #262b32;
+      --accent: #6b9ef0;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #111418;
+    --surface: #1a1e24;
+    --border: #2b313a;
+    --text: #e8ebef;
+    --muted: #9aa3ae;
+    --ok: #4cc27f;
+    --ok-bg: #173324;
+    --maint: #6b9ef0;
+    --maint-bg: #1a2a45;
+    --warn: #e2ad4f;
+    --warn-bg: #3a2e16;
+    --partial: #f08a4b;
+    --partial-bg: #3d2416;
+    --bad: #f06b6b;
+    --bad-bg: #3f1d1d;
+    --unknown: #8b939d;
+    --unknown-bg: #262b32;
+    --accent: #6b9ef0;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 1100px; margin: 0 auto; padding: 32px 16px 48px; }
+  a { color: var(--accent); }
+
+  header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
+  h1 { margin: 0; font-size: 26px; letter-spacing: -0.01em; }
+  .subtitle { margin: 4px 0 0; color: var(--muted); }
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+  button {
+    font: inherit; font-size: 14px; color: var(--text); background: var(--surface);
+    border: 1px solid var(--border); border-radius: 8px; padding: 7px 12px; cursor: pointer;
+  }
+  button:hover { border-color: var(--muted); }
+  button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+
+  .banner {
+    display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-radius: 12px;
+    font-weight: 600; margin-bottom: 8px; background: var(--lvl-bg); color: var(--lvl);
+    border: 1px solid color-mix(in srgb, var(--lvl) 30%, transparent);
+  }
+  .meta { color: var(--muted); font-size: 13px; margin: 0 0 24px; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr)); gap: 16px; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px;
+    border-top: 4px solid var(--lvl);
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .card h2 { margin: 0; font-size: 18px; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px;
+    font-size: 13px; font-weight: 600; background: var(--lvl-bg); color: var(--lvl); white-space: nowrap;
+  }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--lvl); flex: none; }
+
+  .signals { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  .signals li { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+  .signals .name { flex: 1; min-width: 0; }
+  .signals .src { color: var(--muted); font-size: 12px; }
+  .signals .state { color: var(--lvl); font-size: 13px; white-space: nowrap; }
+
+  .incident { background: var(--lvl-bg); border-radius: 10px; padding: 10px 12px; font-size: 14px; }
+  .incident strong { display: block; color: var(--lvl); }
+  .incident p { margin: 4px 0 0; color: var(--text); overflow-wrap: anywhere; }
+  .incident small { color: var(--muted); }
+  .note { color: var(--muted); font-size: 13px; margin: 0; }
+  .card-foot { margin-top: auto; font-size: 13px; display: flex; flex-wrap: wrap; gap: 4px 14px; }
+
+  section.uc { margin-top: 36px; }
+  section.uc h2 { font-size: 18px; margin: 0 0 4px; }
+  .uc-groups { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); gap: 12px; margin-top: 14px; }
+  .uc-group { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; }
+  .uc-group h3 { margin: 0 0 8px; font-size: 14px; }
+  .uc-group .signals li { font-size: 13px; }
+
+  footer { margin-top: 40px; color: var(--muted); font-size: 13px; border-top: 1px solid var(--border); padding-top: 16px; }
+  footer ul { margin: 6px 0 0; padding-left: 18px; }
+
+  .lvl-0 { --lvl: var(--ok); --lvl-bg: var(--ok-bg); }
+  .lvl-1 { --lvl: var(--maint); --lvl-bg: var(--maint-bg); }
+  .lvl-2 { --lvl: var(--warn); --lvl-bg: var(--warn-bg); }
+  .lvl-3 { --lvl: var(--partial); --lvl-bg: var(--partial-bg); }
+  .lvl-4 { --lvl: var(--bad); --lvl-bg: var(--bad-bg); }
+  .lvl--1 { --lvl: var(--unknown); --lvl-bg: var(--unknown-bg); }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <h1>Estado de servicios</h1>
+      <p class="subtitle">Zoom, Microsoft Teams, Outlook / Microsoft 365 y Gmail</p>
+    </div>
+    <div class="actions">
+      <button id="btn-refresh" type="button">Actualizar</button>
+      <button id="btn-notify" type="button" aria-pressed="false">Avisarme en este navegador</button>
+    </div>
+  </header>
+
+  <div id="banner" class="banner lvl--1"><span class="dot"></span><span>Cargando estado…</span></div>
+  <p id="meta" class="meta"></p>
+
+  <div id="cards" class="grid"></div>
+
+  <section class="uc">
+    <h2>Servicios de la Universidad (UC)</h2>
+    <p class="note">Según <a href="https://status.informatica.uc.cl/" target="_blank" rel="noopener">status.informatica.uc.cl</a>.</p>
+    <div id="uc-incidents"></div>
+    <div id="uc-groups" class="uc-groups"></div>
+  </section>
+
+  <footer>
+    La página se actualiza sola cada 3 minutos. Fuentes oficiales:
+    <ul>
+      <li>Zoom: <a href="https://status.zoom.us/" target="_blank" rel="noopener">status.zoom.us</a></li>
+      <li>Microsoft 365: <a href="https://status.cloud.microsoft/" target="_blank" rel="noopener">status.cloud.microsoft</a> (se sincroniza cada 15 min). Para incidentes específicos de la cuenta institucional, revisa el <a href="https://admin.microsoft.com/Adminportal/Home#/servicehealth" target="_blank" rel="noopener">Estado del servicio</a> en el centro de administración.</li>
+      <li>Gmail: <a href="https://www.google.com/appsstatus/dashboard/" target="_blank" rel="noopener">Google Workspace Status Dashboard</a></li>
+      <li>Universidad: <a href="https://status.informatica.uc.cl/" target="_blank" rel="noopener">UC Status</a></li>
+    </ul>
+  </footer>
+</main>
+
+<script>
+const SOURCES = {
+  zoom: "https://status.zoom.us/api/v2/summary.json",
+  uc: "https://status.informatica.uc.cl/api/v2/summary.json",
+  google: "https://www.google.com/appsstatus/dashboard/incidents.json",
+  microsoft: "data/microsoft.json",
+};
+const REFRESH_MS = 3 * 60 * 1000;
+const MS_MAX_AGE_MS = 3 * 60 * 60 * 1000;
+
+// Niveles: -1 sin datos, 0 operativo, 1 mantenimiento, 2 degradado, 3 interrupción parcial, 4 interrupción mayor
+const LABELS = {
+  "-1": "Sin datos",
+  0: "Operativo",
+  1: "Mantenimiento",
+  2: "Rendimiento degradado",
+  3: "Interrupción parcial",
+  4: "Interrupción mayor",
+};
+const STATUSPAGE_COMPONENT = {
+  operational: 0, under_maintenance: 1, degraded_performance: 2, partial_outage: 3, major_outage: 4,
+};
+const STATUSPAGE_IMPACT = { none: 2, minor: 2, major: 3, critical: 4, maintenance: 1 };
+const STATUSPAGE_PHASE = {
+  investigating: "Investigando", identified: "Causa identificada", monitoring: "En monitoreo",
+  in_progress: "En curso", verifying: "Verificando", scheduled: "Programado",
+};
+const GOOGLE_IMPACT = { SERVICE_INFORMATION: 2, SERVICE_DISRUPTION: 3, SERVICE_OUTAGE: 4 };
+
+function microsoftLevel(status) {
+  if (["Operational", "Available", "ServiceRestored", "FalsePositive", "PostIncidentReviewPublished"].includes(status)) return 0;
+  if (status === "ServiceInterruption") return 4;
+  if (status === "ServiceDegradation") return 3;
+  return 2;
+}
+
+function worst(levels) {
+  const known = levels.filter((l) => l >= 0);
+  return known.length ? Math.max(...known) : -1;
+}
+
+function esc(s) {
+  return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+}
+
+function fmtDate(iso) {
+  if (!iso) return "";
+  return new Date(iso).toLocaleString("es-CL", { dateStyle: "short", timeStyle: "short", timeZone: "America/Santiago" });
+}
+
+function shorten(text, max = 280) {
+  const t = String(text ?? "").replace(/\*\*/g, "").replace(/\s+/g, " ").trim();
+  return t.length > max ? t.slice(0, max - 1) + "…" : t;
+}
+
+async function getJSON(url) {
+  const r = await fetch(url, { cache: "no-store" });
+  if (!r.ok) throw new Error(url + " respondió " + r.status);
+  return r.json();
+}
+
+// ---- Lectura de cada fuente ----
+
+function statuspageIncidents(summary, componentIds, source) {
+  const touches = (list) => !list?.length || list.some((c) => componentIds.has(c.id));
+  const incidents = summary.incidents
+    .filter((i) => touches(i.components))
+    .map((i) => ({
+      source,
+      level: STATUSPAGE_IMPACT[i.impact] ?? 2,
+      title: i.name,
+      phase: STATUSPAGE_PHASE[i.status] ?? i.status,
+      text: i.incident_updates?.[0]?.body,
+      updated: i.updated_at,
+      url: i.shortlink,
+    }));
+  const maintenances = summary.scheduled_maintenances
+    .filter((m) => m.status === "in_progress" && touches(m.components))
+    .map((m) => ({
+      source,
+      level: 1,
+      title: m.name,
+      phase: STATUSPAGE_PHASE[m.status] ?? m.status,
+      text: m.incident_updates?.[0]?.body,
+      updated: m.updated_at,
+      url: m.shortlink,
+    }));
+  return incidents.concat(maintenances);
+}
+
+function ucComponent(uc, name) {
+  return uc?.components.find((c) => c.name === name);
+}
+
+function ucSignal(uc, name, label) {
+  const c = ucComponent(uc, name);
+  return { label, src: "UC", level: c ? STATUSPAGE_COMPONENT[c.status] ?? 2 : -1 };
+}
+
+function ucIncidents(uc, names) {
+  if (!uc) return [];
+  const ids = new Set(names.map((n) => ucComponent(uc, n)?.id).filter(Boolean));
+  // Solo incidentes UC que mencionan explícitamente estos componentes
+  return statuspageIncidents({ ...uc, incidents: uc.incidents.filter((i) => i.components?.length), scheduled_maintenances: uc.scheduled_maintenances.filter((m) => m.components?.length) }, ids, "UC");
+}
+
+function microsoftFresh(ms) {
+  return ms && Date.now() - new Date(ms.checked).getTime() < MS_MAX_AGE_MS;
+}
+
+function microsoftSignal(ms, name, label) {
+  const p = microsoftFresh(ms) ? ms.consumer.find((x) => x.name === name) : null;
+  return { label, src: "Microsoft", level: p ? microsoftLevel(p.status) : -1 };
+}
+
+function microsoftIncidents(ms, names) {
+  if (!microsoftFresh(ms)) return [];
+  const list = ms.consumer
+    .filter((p) => names.includes(p.name) && microsoftLevel(p.status) > 0)
+    .map((p) => ({ source: "Microsoft", level: microsoftLevel(p.status), title: p.title || p.name, phase: p.status, text: p.message, url: "https://status.cloud.microsoft/" }));
+  if (ms.admin_incident) {
+    const a = ms.admin_incident;
+    list.push({ source: "Microsoft 365", level: Math.max(3, microsoftLevel(a.status)), title: a.title, phase: a.status, text: a.message, updated: a.updated, url: "https://status.cloud.microsoft/" });
+  }
+  return list;
+}
+
+// ---- Tarjetas ----
+
+const ZOOM_GROUPS = {
+  "Zoom Meetings": "Reuniones",
+  "Zoom Chat": "Chat",
+  "Zoom Rooms": "Zoom Rooms",
+  "Zoom Website": "Portal web y descargas",
+};
+
+function buildZoom({ zoom, uc }) {
+  const signals = [];
+  let incidents = [];
+  if (zoom) {
+    const ids = new Set();
+    for (const g of zoom.components.filter((c) => c.group && ZOOM_GROUPS[c.name])) {
+      const children = zoom.components.filter((c) => c.group_id === g.id);
+      [g, ...children].forEach((c) => ids.add(c.id));
+      signals.push({ label: ZOOM_GROUPS[g.name], src: "Zoom", level: worst([g, ...children].map((c) => STATUSPAGE_COMPONENT[c.status] ?? 2)) });
+    }
+    incidents = statuspageIncidents(zoom, ids, "Zoom");
+  } else {
+    signals.push({ label: "Zoom (oficial)", src: "Zoom", level: -1 });
+  }
+  signals.push(ucSignal(uc, "Zoom", "Zoom en la UC"));
+  incidents = incidents.concat(ucIncidents(uc, ["Zoom"]));
+  return { id: "zoom", name: "Zoom", signals, incidents, links: [["status.zoom.us", "https://status.zoom.us/"]] };
+}
+
+function buildTeams({ uc, microsoft }) {
+  const ucNames = ["Microsoft - Teams"];
+  const msNames = ["Microsoft Teams Free"];
+  return {
+    id: "teams",
+    name: "Microsoft Teams",
+    signals: [ucSignal(uc, "Microsoft - Teams", "Teams institucional (UC)"), microsoftSignal(microsoft, "Microsoft Teams Free", "Teams (Microsoft global)")],
+    incidents: ucIncidents(uc, ucNames).concat(microsoftIncidents(microsoft, msNames)),
+    links: [["Microsoft 365 status", "https://status.cloud.microsoft/"], ["Centro de administración", "https://admin.microsoft.com/Adminportal/Home#/servicehealth"]],
+  };
+}
+
+function buildOutlook({ uc, microsoft }) {
+  const ucNames = ["Correo Microsoft 365 UC", "Microsoft 365"];
+  const msNames = ["Outlook.com", "Microsoft 365 (Consumer)"];
+  return {
+    id: "outlook",
+    name: "Outlook / Microsoft 365",
+    signals: [
+      ucSignal(uc, "Correo Microsoft 365 UC", "Correo institucional (UC)"),
+      ucSignal(uc, "Microsoft 365", "Microsoft 365 (UC)"),
+      microsoftSignal(microsoft, "Outlook.com", "Outlook (Microsoft global)"),
+      microsoftSignal(microsoft, "Microsoft 365 (Consumer)", "Microsoft 365 (global)"),
+    ],
+    incidents: ucIncidents(uc, ucNames).concat(microsoftIncidents(microsoft, msNames)),
+    links: [["Microsoft 365 status", "https://status.cloud.microsoft/"], ["Centro de administración", "https://admin.microsoft.com/Adminportal/Home#/servicehealth"]],
+  };
+}
+
+function buildGmail({ google }) {
+  const card = { id: "gmail", name: "Gmail", signals: [], incidents: [], links: [["Google Workspace Status", "https://www.google.com/appsstatus/dashboard/"]] };
+  if (!google) {
+    card.signals.push({ label: "Gmail (Google Workspace)", src: "Google", level: -1 });
+    return card;
+  }
+  const gmail = google.filter((i) => i.affected_products?.some((p) => p.title === "Gmail"));
+  const active = gmail.filter((i) => !i.end);
+  card.incidents = active.map((i) => ({
+    source: "Google",
+    level: GOOGLE_IMPACT[i.status_impact] ?? 2,
+    title: shorten(i.external_desc, 120),
+    phase: "En curso",
+    text: i.most_recent_update?.text,
+    updated: i.modified,
+    url: "https://www.google.com/appsstatus/dashboard/" + i.uri,
+  }));
+  card.signals.push({ label: "Gmail (Google Workspace)", src: "Google", level: worst([0, ...card.incidents.map((i) => i.level)]) });
+  const last = gmail.find((i) => i.end);
+  if (last) card.note = "Último incidente resuelto: " + fmtDate(last.begin);
+  return card;
+}
+
+// ---- Render ----
+
+function signalRow(s) {
+  return `<li class="lvl-${s.level}"><span class="dot"></span><span class="name">${esc(s.label)} <span class="src">· ${esc(s.src)}</span></span><span class="state">${LABELS[s.level]}</span></li>`;
+}
+
+function incidentBox(i) {
+  return `<div class="incident lvl-${i.level}">
+    <strong>${esc(i.title)}</strong>
+    <small>${esc(i.source)} · ${esc(i.phase)}${i.updated ? " · " + esc(fmtDate(i.updated)) : ""}</small>
+    ${i.text ? `<p>${esc(shorten(i.text))}</p>` : ""}
+    ${i.url ? `<small><a href="${esc(i.url)}" target="_blank" rel="noopener">Ver detalle</a></small>` : ""}
+  </div>`;
+}
+
+function renderCard(c) {
+  return `<article class="card lvl-${c.level}">
+    <div class="card-head"><h2>${esc(c.name)}</h2><span class="pill"><span class="dot"></span>${LABELS[c.level]}</span></div>
+    <ul class="signals">${c.signals.map(signalRow).join("")}</ul>
+    ${c.incidents.map(incidentBox).join("")}
+    ${c.note ? `<p class="note">${esc(c.note)}</p>` : ""}
+    <div class="card-foot">${c.links.map(([t, u]) => `<a href="${u}" target="_blank" rel="noopener">${esc(t)}</a>`).join("")}</div>
+  </article>`;
+}
+
+function renderUC(uc) {
+  const groupsEl = document.getElementById("uc-groups");
+  const incEl = document.getElementById("uc-incidents");
+  if (!uc) {
+    groupsEl.innerHTML = `<p class="note">No se pudo leer el estado de la UC.</p>`;
+    incEl.innerHTML = "";
+    return;
+  }
+  const groups = uc.components.filter((c) => c.group);
+  const loose = uc.components.filter((c) => !c.group && !c.group_id);
+  const blocks = groups.map((g) => [g.name, uc.components.filter((c) => c.group_id === g.id)]);
+  if (loose.length) blocks.push(["Otros", loose]);
+  groupsEl.innerHTML = blocks
+    .map(([name, comps]) => `<div class="uc-group"><h3>${esc(name)}</h3><ul class="signals">${comps
+      .map((c) => `<li class="lvl-${STATUSPAGE_COMPONENT[c.status] ?? 2}"><span class="dot"></span><span class="name">${esc(c.name)}</span>${c.status === "operational" ? "" : `<span class="state">${LABELS[STATUSPAGE_COMPONENT[c.status] ?? 2]}</span>`}</li>`)
+      .join("")}</ul></div>`)
+    .join("");
+  const all = statuspageIncidents(uc, new Set(uc.components.map((c) => c.id)), "UC");
+  incEl.innerHTML = all.length ? `<div class="grid" style="margin-top:12px">${all.map(incidentBox).join("")}</div>` : "";
+}
+
+// ---- Avisos ----
+
+const previous = {};
+let notifyOn = false;
+try { notifyOn = localStorage.getItem("notify") === "1" && Notification.permission === "granted"; } catch (e) {}
+
+function syncNotifyButton() {
+  const b = document.getElementById("btn-notify");
+  b.setAttribute("aria-pressed", String(notifyOn));
+  b.textContent = notifyOn ? "Avisos activados" : "Avisarme en este navegador";
+}
+
+document.getElementById("btn-notify").addEventListener("click", async () => {
+  if (!("Notification" in window)) return alert("Este navegador no permite notificaciones.");
+  if (!notifyOn && Notification.permission !== "granted") {
+    if ((await Notification.requestPermission()) !== "granted") return;
+  }
+  notifyOn = !notifyOn;
+  try { localStorage.setItem("notify", notifyOn ? "1" : "0"); } catch (e) {}
+  syncNotifyButton();
+});
+
+function notifyChanges(cards) {
+  for (const c of cards) {
+    const before = previous[c.id];
+    previous[c.id] = c.level;
+    if (!notifyOn || before === undefined || c.level === before || c.level < 0) continue;
+    const body = c.level > before ? LABELS[c.level] + (c.incidents[0] ? ": " + c.incidents[0].title : "") : "Recuperado: " + LABELS[c.level];
+    try { new Notification(c.name, { body }); } catch (e) {}
+  }
+}
+
+// ---- Ciclo principal ----
+
+async function refresh() {
+  const keys = Object.keys(SOURCES);
+  const results = await Promise.allSettled(keys.map((k) => getJSON(SOURCES[k])));
+  const data = {};
+  const failed = [];
+  keys.forEach((k, i) => {
+    if (results[i].status === "fulfilled") data[k] = results[i].value;
+    else failed.push(k);
+  });
+  if (data.microsoft && !microsoftFresh(data.microsoft)) failed.push("microsoft (desactualizado)");
+
+  const cards = [buildZoom(data), buildTeams(data), buildOutlook(data), buildGmail(data)];
+  for (const c of cards) c.level = worst([...c.signals.map((s) => s.level), ...c.incidents.map((i) => i.level)]);
+
+  document.getElementById("cards").innerHTML = cards.map(renderCard).join("");
+  renderUC(data.uc);
+
+  const problems = cards.filter((c) => c.level >= 2);
+  const overall = worst(cards.map((c) => c.level));
+  const banner = document.getElementById("banner");
+  banner.className = "banner lvl-" + overall;
+  banner.innerHTML = `<span class="dot"></span><span>${
+    overall < 0 ? "No se pudo obtener el estado" :
+    problems.length ? `${problems.length === 1 ? "1 servicio con problemas" : problems.length + " servicios con problemas"}: ${esc(problems.map((c) => c.name).join(", "))}` :
+    overall === 1 ? "Servicios operativos, con mantenimiento en curso" :
+    "Todos los servicios operativos"
+  }</span>`;
+  document.title = (problems.length ? `⚠ (${problems.length}) ` : "") + "Estado de servicios";
+
+  const time = new Date().toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit", timeZone: "America/Santiago" });
+  document.getElementById("meta").textContent =
+    "Última verificación: " + time + (failed.length ? " · Sin respuesta de: " + failed.join(", ") : "");
+
+  notifyChanges(cards);
+}
+
+document.getElementById("btn-refresh").addEventListener("click", refresh);
+syncNotifyButton();
+refresh();
+setInterval(refresh, REFRESH_MS);
+</script>
+</body>
+</html>
