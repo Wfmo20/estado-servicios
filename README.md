@@ -24,6 +24,10 @@ El botón **«Avisarme en este navegador»** muestra una notificación del siste
 
 La página quedará en `https://<usuario>.github.io/<repositorio>/`.
 
+## Autor
+
+Desarrollado por **Wilfri Martinez** para la comunidad de Nueva Las Condes.
+
 ## Limitaciones
 
 - El estado de Microsoft es el **global público**. Los incidentes que afectan solo a la cuenta de la universidad aparecen en el *Estado del servicio* del centro de administración de Microsoft 365, que requiere acceso de administrador, o en la sección UC de esta página.
