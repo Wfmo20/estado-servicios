@@ -47,7 +47,7 @@ def main():
         }
 
     # Hora redondeada: así solo se hace commit una vez por hora o cuando cambia un estado.
-    checked = datetime.datetime.now(datetime.timezone.utc).replace(minute=0, second=0, microsecond=0)
+    checked = datetime.datetime.now(datetime.timezone.utc).replace(second=0, microsecond=0)
     data = {"checked": checked.isoformat(), "consumer": consumer, "admin_incident": admin_incident}
     OUT.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 

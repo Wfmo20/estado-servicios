@@ -188,7 +188,7 @@ const SOURCES = {
   microsoft: "data/microsoft.json",
 };
 const REFRESH_MS = 3 * 60 * 1000;
-const MS_MAX_AGE_MS = 3 * 60 * 60 * 1000;
+const MS_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
 // Niveles: -1 sin datos, 0 operativo, 1 mantenimiento, 2 degradado, 3 interrupción parcial, 4 interrupción mayor
 const LABELS = {
@@ -290,6 +290,10 @@ function microsoftFresh(ms) {
   return ms && Date.now() - new Date(ms.checked).getTime() < MS_MAX_AGE_MS;
 }
 
+function microsoftNote(ms) {
+  return microsoftFresh(ms) ? "Estado Microsoft global consultado: " + fmtDate(ms.checked) : "";
+}
+
 function microsoftSignal(ms, name, label) {
   const p = microsoftFresh(ms) ? ms.consumer.find((x) => x.name === name) : null;
   return { label, src: "Microsoft", level: p ? microsoftLevel(p.status) : -1 };
@@ -344,6 +348,7 @@ function buildTeams({ uc, microsoft }) {
     signals: [ucSignal(uc, "Microsoft - Teams", "Teams institucional (UC)"), microsoftSignal(microsoft, "Microsoft Teams Free", "Teams (Microsoft global)")],
     incidents: ucIncidents(uc, ucNames).concat(microsoftIncidents(microsoft, msNames)),
     links: [["Microsoft 365 status", "https://status.cloud.microsoft/"], ["Centro de administración", "https://admin.microsoft.com/Adminportal/Home#/servicehealth"]],
+    note: microsoftNote(microsoft),
   };
 }
 
@@ -361,6 +366,7 @@ function buildOutlook({ uc, microsoft }) {
     ],
     incidents: ucIncidents(uc, ucNames).concat(microsoftIncidents(microsoft, msNames)),
     links: [["Microsoft 365 status", "https://status.cloud.microsoft/"], ["Centro de administración", "https://admin.microsoft.com/Adminportal/Home#/servicehealth"]],
+    note: microsoftNote(microsoft),
   };
 }
 
